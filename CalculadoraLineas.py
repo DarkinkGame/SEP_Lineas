@@ -224,7 +224,8 @@ def calcular_regulacion():
 ##########################################################################################################################################
         else:
             tipo_linea = "Error: Distancia no válida"
-
+        
+        type_linea.config(text=f"Tipo de Línea: {tipo_linea}")
         val_propia.config(text=constante_prop)
         val_zc.config(text=Z_c_str)
         val_param_a.config(text=a_polar_str(A))
