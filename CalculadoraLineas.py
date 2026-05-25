@@ -55,10 +55,6 @@ def calcular_regulacion():
         if not nombre_cond:
             messagebox.showerror("Error de selección", "Por favor, selecciona un conductor primero.")
             return
-<<<<<<< HEAD
-=======
-##########################################################################################################################################
->>>>>>> ca40eb68750a76999b026549a345e6533dc7d428
         if longitud_km > 0 and longitud_km < 80:
 
             tipo_linea = "Corta: Admitancia en Paralelo Despreciada"
@@ -113,77 +109,60 @@ def calcular_regulacion():
 ##########################################################################################################################################
         elif longitud_km >= 80 and longitud_km <= 250:
             tipo_linea = "Media: Modelo π nominal"
-<<<<<<< HEAD
-            # Extraemos los datos del conductor seleccionado para el cálculo
+            
+            # Extracción paramétrica
             r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"])
             gmr_m = float(diccionario_conductores[nombre_cond]["GMR"])
             diametro_m = float(diccionario_conductores[nombre_cond]["Diametro"])
             radio_m = diametro_m / 2.0
             gmd_torre = float(entrada_gmd.get()) 
-            omega = 2.0 * math.pi * frecuencia
-            #Calculamos el voltaje en fase del receptor (V_R) a partir del voltaje de línea (LL)
-            # Cálculo de la impedancia serie total (Z) equivalente de la línea
+            
+            omega = 2.0 * math.pi * f
+            
+            # Impedancia serie total (Z)
             r_total = r_unitaria * longitud_km
-            
-            # La inductancia por unidad de longitud se rige por la ecuación geométrica L = 2e-7 * ln(GMD/GMR)
-            inductancia_h_km = 2e-7 * math.log(gmd_torre / gmr_m) * 1000.0 # [H/km]
-            # La reactancia inductiva total (X_total) considerando la longitud física de la red
+            inductancia_h_km = 2e-7 * math.log(gmd_torre / gmr_m) * 1000.0
             x_total = omega * inductancia_h_km * longitud_km
-            
-            # Conformación del fasor de impedancia serie (Z_linea) en el dominio complejo
             Z_linea = complex(r_total, x_total)
             
-            # Evaluación de la admitancia en derivación total (Y)
-            epsilon_0 = 8.8541878128e-12 # Permitividad eléctrica del vacío [F/m]
-            
-            # Capacitancia al neutro por unidad de longitud evaluada como C = 2*pi*e0 / ln(GMD/r)
+            # Admitancia en derivación total (Y)
+            epsilon_0 = 8.8541878128e-12
             capacitancia_f_m = (2.0 * math.pi * epsilon_0) / math.log(gmd_torre / radio_m)
-            capacitancia_total = capacitancia_f_m * (longitud_km * 1000.0) # Capacitancia total [F]
-            
-            # Susceptancia capacitiva total (B_c), que constituye la parte imaginaria de la admitancia en derivación
+            capacitancia_total = capacitancia_f_m * (longitud_km * 1000.0)
             y_total = omega * capacitancia_total
             Y_linea = complex(0, y_total)
             
-            # Determinación de las Constantes Generalizadas de Circuito (Matriz ABCD) para el modelo π nominal
-            # El parámetro A considera la caída de tensión producida por la corriente de carga circulando en la admitancia
+            # Constantes Generalizadas de Circuito
             A = 1.0 + (Z_linea * Y_linea) / 2.0
-            B = Z_linea # El parámetro B corresponde directamente a la impedancia serie total
+            B = Z_linea
+            C = Y_linea * (1.0 + (Z_linea * Y_linea) / 4.0)
+            D = A
             
-            # Definición del fasor de voltaje en el extremo receptor (V_R) tomado como referencia angular (0°)
+            # Variables nulas para la interfaz (inaplicables en línea media)
+            constante_prop = "N/A (Línea Media)"
+            Z_c_str = "N/A"
+            
+            # Fasores de estado en el nodo receptor
             v_receptor_fase = (voltaje_kv * 1000.0) / math.sqrt(3)
             V_R = complex(v_receptor_fase, 0)
             voltaje_linea_total = voltaje_kv * 1000.0
             
-            # Cálculo del factor de potencia (fp) operativo en el nodo de carga
             fp = potencia_w / (math.sqrt(3) * voltaje_linea_total * corriente_a)
             if fp > 1.0: fp = 1.0
             theta = math.acos(fp)
-            
-            # Fasor de corriente en el extremo receptor (I_R), asumiendo un flujo de potencia reactiva en atraso
             I_R = corriente_a * complex(math.cos(theta), -math.sin(theta))
             
-            # Solución de la ecuación de estado de la red de dos puertos para el voltaje transmisor (V_T)
+            # Solución de la ecuación de estado lineal
             V_T = (A * V_R) + (B * I_R)
             
-            # Cuantificación de la regulación de voltaje evaluando el comportamiento del sistema en condición de vacío (I_R = 0)
-            # El voltaje en vacío V_R_NL se obtiene analíticamente despejando el parámetro A
+            # Regulación de voltaje (Evaluación en vacío)
             V_R_NL = V_T / A
             regulacion = ((abs(V_R_NL) - abs(V_R)) / abs(V_R)) * 100.0
             
-            # Actualización de los elementos visuales de la interfaz gráfica
+            # Actualización de GUI
             val_impedancia.config(text=f"{Z_linea.real:.3f} + {Z_linea.imag:.3f}j Ω")
             etiqueta_resultado.config(text=f"Regulación calculada: {regulacion:.4f} %", fg="green")
-            
-            # Despliegue de variables de estado en consola para validación del modelado
-            vt_linea_kv = (abs(V_T) * math.sqrt(3)) / 1000.0
-            print(f"Regulación calculada: {regulacion:.4f} %")
-            print(f"Voltaje requerido en el generador: {vt_linea_kv:.4f} kV de línea")
-            print(f"Constante A calculada: {A.real:.5f} + {A.imag:.5f}j")
 
-=======
-
-##########################################################################################################################################
->>>>>>> ca40eb68750a76999b026549a345e6533dc7d428
         elif longitud_km > 250:
             tipo_linea = "Larga: Modelo de Parámetros Distribuidos"
 
