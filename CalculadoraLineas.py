@@ -47,39 +47,65 @@ def calcular_regulacion():
         if not nombre_cond:
             messagebox.showerror("Error de selección", "Por favor, selecciona un conductor primero.")
             return
-        #################################### Lineas Medias ##########################################
-        ####### Aquí pongo un comentaario
+        
         if longitud_km > 0 and longitud_km < 80:
+
             tipo_linea = "Corta: Admitancia en Paralelo Despreciada"
+            # Extraemos los datos del conductor seleccionado para el cálculo
             r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"])
             gmr_m = float(diccionario_conductores[nombre_cond]["GMR"])
-
+            #Calculamos el voltaje en fase del receptor (V_R) a partir del voltaje de línea (LL)
             v_receptor_fase = (voltaje_kv * 1000) / math.sqrt(3)
+            #Voltaje en forma compleja del receptor (V_R) con ángulo de fase 0 (asumiendo carga inductiva)
             V_R = complex(v_receptor_fase, 0)
             voltaje_linea_total = voltaje_kv * 1000
-
+            #Factor de potencia (fp) calculado a partir de la potencia activa (P) y la aparente (S)
             fp = potencia_w / (math.sqrt(3) * voltaje_linea_total * corriente_a)
-
+            #Aseguramos que el factor de potencia no exceda 1.0 para evitar errores en el cálculo del ángulo de fase
             if fp > 1.0: fp = 1.0
             theta = math.acos(fp)
+            #Corriente en forma compleja (I_R) con ángulo de fase negativo (asumiendo carga inductiva)
             I_R = corriente_a * complex(math.cos(theta), -math.sin(theta))
-            gmd_torre = 2.5 #Modificar, para celdas de .csv
+
+            gmd_torre = 2.5#GMD típico para una torre de 3 conductores por fase (puede ajustarse según el diseño específico de la torre)
+
+            #Cálculo de la resistencia total (R_total) y la reactancia total (X_total) de la línea
             r_total = r_unitaria * longitud_km
+            #La inductancia por unidad de longitud (H/km) se calcula usando la fórmula estándar para líneas aéreas, considerando el GMR del conductor y la distancia media geométrica (GMD) entre los conductores en la torre.
+            #La fórmula para la inductancia por unidad de longitud es: L' = (2e-7) * ln(GMD/GMR), donde GMD es la distancia media geométrica entre los conductores y GMR es el radio geométrico medio del conductor.
             inductancia_h_km = 2e-7 * math.log(gmd_torre / gmr_m) * 1000 # H/km
+            
+            #La reactancia total (X_total) se calcula multiplicando la inductancia por unidad de longitud por la frecuencia (60 Hz) y por 2π, y luego por la longitud de la línea en kilómetros.
             x_total = 2 * math.pi * 60 * inductancia_h_km * longitud_km
+            
+            #La impedancia total de la línea (Z_linea) se representa como un número complejo, donde la parte real es la resistencia total (R_total) y la parte imaginaria es la reactancia total (X_total).
             Z_linea = complex(r_total, x_total)
+            
+            #Actualizamos la etiqueta de impedancia con el valor calculado en la interfaz gráfica
             val_impedancia.config(text=f"{Z_linea} Ω")
+
             V_T = V_R + (Z_linea * I_R)
+
+            #La regulación se calcula como el porcentaje de la diferencia entre el voltaje en el generador (V_T) y el voltaje en el receptor (V_R) con respecto al voltaje en el receptor (V_R). Se multiplica por 100 para obtener el resultado en porcentaje.
             regulacion = ((abs(V_T) - abs(V_R)) / abs(V_R)) * 100
+
+            #Actualizamos la etiqueta de resultado con el valor calculado de regulación, formateado a dos decimales y con un color verde para resaltar el resultado positivo.
             etiqueta_resultado.config(text=f"Regulación calculada: {regulacion:.2f} %", fg="green")
+
+            #Imprimimos en la consola el valor de regulación calculada y el voltaje requerido en el generador para referencia adicional.
             print("Regulación calculada: %.2f %%" % regulacion)
+            #El voltaje requerido en el generador (V_T) se convierte a kilovoltios de línea (kV de línea) dividiendo su valor absoluto por 1000 y multiplicando por la raíz de 3, ya que estamos trabajando con un sistema trifásico.
             vt_linea_kv = (abs(V_T) * math.sqrt(3)) / 1000
             print(f"Voltaje requerido en el generador: {vt_linea_kv:.2f} kV de línea")
 
         elif longitud_km >= 80 and longitud_km <= 250:
             tipo_linea = "Media: Modelo π nominal"
+
+
         elif longitud_km > 250:
             tipo_linea = "Larga: Modelo de Parámetros Distribuidos"
+
+    
         else:
             tipo_linea = "Error: Distancia no válida"
         
