@@ -48,6 +48,7 @@ def calcular_regulacion():
             messagebox.showerror("Error de selección", "Por favor, selecciona un conductor primero.")
             return
         #################################### Lineas Medias ##########################################
+        ####### Aquí pongo un comentaario
         if longitud_km > 0 and longitud_km < 80:
             tipo_linea = "Corta: Admitancia en Paralelo Despreciada"
             r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"])
