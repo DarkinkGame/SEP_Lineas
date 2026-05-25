@@ -55,10 +55,7 @@ def calcular_regulacion():
         if not nombre_cond:
             messagebox.showerror("Error de selección", "Por favor, selecciona un conductor primero.")
             return
-<<<<<<< HEAD
-=======
 ##########################################################################################################################################
->>>>>>> ca40eb68750a76999b026549a345e6533dc7d428
         if longitud_km > 0 and longitud_km < 80:
 
             tipo_linea = "Corta: Admitancia en Paralelo Despreciada"
@@ -113,7 +110,6 @@ def calcular_regulacion():
 ##########################################################################################################################################
         elif longitud_km >= 80 and longitud_km <= 250:
             tipo_linea = "Media: Modelo π nominal"
-<<<<<<< HEAD
             # Extraemos los datos del conductor seleccionado para el cálculo
             r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"])
             gmr_m = float(diccionario_conductores[nombre_cond]["GMR"])
@@ -180,10 +176,6 @@ def calcular_regulacion():
             print(f"Voltaje requerido en el generador: {vt_linea_kv:.4f} kV de línea")
             print(f"Constante A calculada: {A.real:.5f} + {A.imag:.5f}j")
 
-=======
-
-##########################################################################################################################################
->>>>>>> ca40eb68750a76999b026549a345e6533dc7d428
         elif longitud_km > 250:
             tipo_linea = "Larga: Modelo de Parámetros Distribuidos"
 
@@ -245,7 +237,8 @@ def calcular_regulacion():
 ##########################################################################################################################################
         else:
             tipo_linea = "Error: Distancia no válida"
-
+        
+        type_linea.config(text=f"Tipo de Línea: {tipo_linea}")
         val_propia.config(text=constante_prop)
         val_zc.config(text=Z_c_str)
         val_param_a.config(text=a_polar_str(A))
