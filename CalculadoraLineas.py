@@ -3,10 +3,12 @@ from tkinter import messagebox
 from tkinter import ttk  # Necesario para el menú desplegable (Combobox)
 import csv
 import math
+import cmath
 
 # Diccionario global para almacenar los datos de los conductores del CSV
 diccionario_conductores = {}
 
+f = 60 # Frecuencia en Hz (puede ajustarse según la región o el sistema específico)
 # FUNCIÓN PARA CARGAR EL ARCHIVO CSV AL INICIAR EL PROGRAMA
 def cargar_base_datos():
     try:
@@ -21,6 +23,12 @@ def cargar_base_datos():
                 }
     except FileNotFoundError:
         messagebox.showerror("Error de Archivo", "No se encontró el archivo 'conductores.csv'.\nAsegúrate de crearlo en la misma carpeta.")
+
+def a_polar_str(numero_complejo, unidades=""):
+    magnitud = abs(numero_complejo)
+    angulo_rad = cmath.phase(numero_complejo)
+    angulo_deg = math.degrees(angulo_rad)
+    return f"{magnitud:.4f} ∠ {angulo_deg:.2f}° {unidades}"
 
 # FUNCIÓN QUE REACCIONA AL SELECCIONAR UN CONDUCTOR EN EL MENÚ DESPLEGABLE
 def al_seleccionar_conductor(event):
@@ -47,6 +55,10 @@ def calcular_regulacion():
         if not nombre_cond:
             messagebox.showerror("Error de selección", "Por favor, selecciona un conductor primero.")
             return
+<<<<<<< HEAD
+=======
+##########################################################################################################################################
+>>>>>>> ca40eb68750a76999b026549a345e6533dc7d428
         if longitud_km > 0 and longitud_km < 80:
 
             tipo_linea = "Corta: Admitancia en Paralelo Despreciada"
@@ -66,7 +78,8 @@ def calcular_regulacion():
             #Corriente en forma compleja (I_R) con ángulo de fase negativo (asumiendo carga inductiva)
             I_R = corriente_a * complex(math.cos(theta), -math.sin(theta))
 
-            gmd_torre = 2.5#GMD típico para una torre de 3 conductores por fase (puede ajustarse según el diseño específico de la torre)
+            #GMD típico para una torre de 3 conductores por fase (puede ajustarse según el diseño específico de la torre)
+            gmd_torre = float(entrada_gmd.get())
 
             #Cálculo de la resistencia total (R_total) y la reactancia total (X_total) de la línea
             r_total = r_unitaria * longitud_km
@@ -97,8 +110,10 @@ def calcular_regulacion():
             vt_linea_kv = (abs(V_T) * math.sqrt(3)) / 1000
             print(f"Voltaje requerido en el generador: {vt_linea_kv:.2f} kV de línea")
 
+##########################################################################################################################################
         elif longitud_km >= 80 and longitud_km <= 250:
             tipo_linea = "Media: Modelo π nominal"
+<<<<<<< HEAD
             # Extraemos los datos del conductor seleccionado para el cálculo
             r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"])
             gmr_m = float(diccionario_conductores[nombre_cond]["GMR"])
@@ -165,17 +180,78 @@ def calcular_regulacion():
             print(f"Voltaje requerido en el generador: {vt_linea_kv:.4f} kV de línea")
             print(f"Constante A calculada: {A.real:.5f} + {A.imag:.5f}j")
 
+=======
+
+##########################################################################################################################################
+>>>>>>> ca40eb68750a76999b026549a345e6533dc7d428
         elif longitud_km > 250:
             tipo_linea = "Larga: Modelo de Parámetros Distribuidos"
 
-    
+            # Recuperar los datos del conductor seleccionado desde su CSV
+            r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"]) # Ω/km
+            gmr_m = float(diccionario_conductores[nombre_cond]["GMR"])             # m
+            r_externo = float(diccionario_conductores[nombre_cond]["Diametro"]) / 2 # m
+
+            # Parámetros eléctricos unitarios por kilómetro
+            gmd_torre = float(entrada_gmd.get())  # Distancia de la torre (metros)
+            epsilon_0 = 8.854187e-12
+            
+            # Impedancia serie unitaria z = r + jx
+            inductancia_h_km = 2e-7 * math.log(gmd_torre / gmr_m) * 1000
+            x_unitaria = 2 * math.pi * f * inductancia_h_km
+            z_unitario = complex(r_unitaria, x_unitaria)
+
+            # Admitancia paralelo unitaria y = 0 + jb
+            capacitancia_f_km = (2 * math.pi * epsilon_0) / math.log(gmd_torre / r_externo) * 1000
+            b_unitaria = 2 * math.pi * f * capacitancia_f_km
+            y_unitario = complex(0, b_unitaria)
+
+            # Constantes distribuidas
+            gamma = cmath.sqrt(z_unitario * y_unitario)
+            Z_c = cmath.sqrt(z_unitario / y_unitario)
+
+            # Argumento hiperbólico (gamma * l)
+            gamma_l = gamma * longitud_km
+
+            constante_prop = f"γl = {gamma_l.real:.4f} + {gamma_l.imag:.4f}j"
+            Z_c_str = a_polar_str(Z_c, "Ω")
+
+            # Parámetros ABCD calculados de forma compleja con cmath
+            A = cmath.cosh(gamma_l)
+            B = Z_c * cmath.sinh(gamma_l)
+            C = cmath.sinh(gamma_l) / Z_c
+            D = A
+
+            # Procesamiento de fasores de la carga (Plena Carga - Full Load)
+            v_receptor_fase = (voltaje_kv * 1000) / math.sqrt(3)
+            V_R_FL = complex(v_receptor_fase, 0) # Referencia angular 0°
+
+            voltaje_linea_total = voltaje_kv * 1000
+            fp = potencia_w / (math.sqrt(3) * voltaje_linea_total * corriente_a)
+            if fp > 1.0: fp = 1.0
+            theta = math.acos(fp)
+            I_R = corriente_a * complex(math.cos(theta), -math.sin(theta))
+
+            # Cálculo de Voltaje Transmisor (V_S) y Receptor sin carga (V_R_NL)
+            V_S = (A * V_R_FL) + (B * I_R)
+            V_R_NL = V_S / A
+
+            # Porcentaje de Regulación de Voltaje
+            regulacion = ((abs(V_R_NL) - abs(V_R_FL)) / abs(V_R_FL)) * 100
+
+            # Resultados en la interfaz gráfica
+            etiqueta_resultado.config(text=f"Regulación calculada: {regulacion:.2f} %", fg="green")
+
+##########################################################################################################################################
         else:
             tipo_linea = "Error: Distancia no válida"
-        
-        type_linea.config(text=f"Tipo de Línea: {tipo_linea}")
 
+        val_propia.config(text=constante_prop)
+        val_zc.config(text=Z_c_str)
+        val_param_a.config(text=a_polar_str(A))
+        val_param_b.config(text=a_polar_str(B, "Ω"))
+        val_param_c.config(text=a_polar_str(C, "S"))
 
-    
     except ValueError:
         messagebox.showerror("Error de entrada", "Por favor, ingresa solo números válidos.")
     except KeyError:
@@ -208,17 +284,20 @@ tk.Label(ventana, text="Longitud de Línea [km]:").grid(row=3, column=0, padx=10
 entrada_longitud = tk.Entry(ventana)
 entrada_longitud.grid(row=3, column=1, padx=10, pady=10)
 
+tk.Label(ventana, text="GMD [m]:").grid(row=4, column=0, padx=10, pady=10, sticky="e")
+entrada_gmd = tk.Entry(ventana)
+entrada_gmd.grid(row=4, column=1, padx=10, pady=10)
 
 
 # Botón de Acción y Resultados reacomodados en filas secuenciales (4, 5 y 6)
 boton_calcular = tk.Button(ventana, text="Calcular Regulación", command=calcular_regulacion, bg="#4CAF50", fg="white", font=("Arial", 10, "bold"))
-boton_calcular.grid(row=4, column=0, columnspan=2, pady=15)
+boton_calcular.grid(row=5, column=0, columnspan=2, pady=15)
 
 etiqueta_resultado = tk.Label(ventana, text="Regulación calculada: -- %", font=("Arial", 11, "bold"))
-etiqueta_resultado.grid(row=5, column=0, columnspan=2, pady=5)
+etiqueta_resultado.grid(row=6, column=0, columnspan=2, pady=5)
 
 type_linea = tk.Label(ventana, text="Tipo de Línea: ", font=("Arial", 11, "bold"), fg="blue")
-type_linea.grid(row=6, column=0, columnspan=2, pady=5)
+type_linea.grid(row=7, column=0, columnspan=2, pady=5)
 
 
 # ==============================================================================
@@ -253,5 +332,27 @@ val_diametro.grid(row=4, column=4, padx=10, pady=8, sticky="w")
 
 val_impedancia = tk.Label(ventana, text="-- Ω", font=("Arial", 10), fg="purple")
 val_impedancia.grid(row=5, column=4, padx=10, pady=8, sticky="w")
+
+tk.Label(ventana, text=" CONSTANTES GENERALIZADAS DE LA RED ", font=("Arial", 11, "bold", "underline")).grid(row=5, column=3, columnspan=2, padx=(50, 10), pady=(20, 10))
+
+tk.Label(ventana, text="Constante Propia:", font=("Arial", 10, "bold")).grid(row=6, column=3, padx=(50, 10), pady=4, sticky="e")
+val_propia = tk.Label(ventana, text="--", font=("Arial", 10), fg="brown")
+val_propia.grid(row=6, column=4, padx=10, pady=4, sticky="w")
+
+tk.Label(ventana, text="Impedancia Característica (Zc):", font=("Arial", 10, "bold")).grid(row=7, column=3, padx=(50, 10), pady=4, sticky="e")
+val_zc = tk.Label(ventana, text="--", font=("Arial", 10), fg="brown")
+val_zc.grid(row=7, column=4, padx=10, pady=4, sticky="w")
+
+tk.Label(ventana, text="Parámetros A y D (Adimensional):", font=("Arial", 10, "bold")).grid(row=8, column=3, padx=(50, 10), pady=4, sticky="e")
+val_param_a = tk.Label(ventana, text="--", font=("Arial", 10), fg="brown")
+val_param_a.grid(row=8, column=4, padx=10, pady=4, sticky="w")
+
+tk.Label(ventana, text="Parámetro B (Impedancia):", font=("Arial", 10, "bold")).grid(row=9, column=3, padx=(50, 10), pady=4, sticky="e")
+val_param_b = tk.Label(ventana, text="--", font=("Arial", 10), fg="brown")
+val_param_b.grid(row=9, column=4, padx=10, pady=4, sticky="w")
+
+tk.Label(ventana, text="Parámetro C (Admitancia):", font=("Arial", 10, "bold")).grid(row=10, column=3, padx=(50, 10), pady=4, sticky="e")
+val_param_c = tk.Label(ventana, text="--", font=("Arial", 10), fg="brown")
+val_param_c.grid(row=10, column=4, padx=10, pady=4, sticky="w")
 
 ventana.mainloop()
