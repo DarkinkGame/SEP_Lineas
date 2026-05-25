@@ -47,7 +47,7 @@ def calcular_regulacion():
         if not nombre_cond:
             messagebox.showerror("Error de selección", "Por favor, selecciona un conductor primero.")
             return
-
+        #################################### Lineas Medias ##########################################
         if longitud_km > 0 and longitud_km < 80:
             tipo_linea = "Corta: Admitancia en Paralelo Despreciada"
             r_unitaria = float(diccionario_conductores[nombre_cond]["Resistencia"])
@@ -74,7 +74,7 @@ def calcular_regulacion():
             print("Regulación calculada: %.2f %%" % regulacion)
             vt_linea_kv = (abs(V_T) * math.sqrt(3)) / 1000
             print(f"Voltaje requerido en el generador: {vt_linea_kv:.2f} kV de línea")
-            
+
         elif longitud_km >= 80 and longitud_km <= 250:
             tipo_linea = "Media: Modelo π nominal"
         elif longitud_km > 250:
